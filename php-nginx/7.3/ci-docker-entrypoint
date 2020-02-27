@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+nginx
+/usr/local/bin/hiqdev-docker-entrypoint php-fpm "$@"
+
