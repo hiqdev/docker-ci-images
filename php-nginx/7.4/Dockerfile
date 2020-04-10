@@ -1,6 +1,6 @@
 FROM hiqdev/php:7.4-fpm
 
-# Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/stretch/Dockerfile
+# Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/buster/Dockerfile
 LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
 
 ENV NGINX_VERSION   1.17.9
@@ -9,8 +9,8 @@ ENV PKG_RELEASE     1~buster
 
 RUN set -x \
 # create nginx user/group first, to be consistent throughout docker variants
-    && addgroup --system --gid 111 nginx \
-    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 111 nginx \
+    && addgroup --system --gid 105 nginx \
+    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 102 nginx \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 ca-certificates \
     && \
@@ -93,19 +93,15 @@ RUN set -x \
         && rm -rf "$tempDir" /etc/apt/sources.list.d/temp.list; \
     fi
 
+RUN apt-get update && \
+    apt-get install -y libzip4 && \
+    rm -rf /var/lib/apt/lists/*
+
 # forward request and error logs to docker log collector
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN rm /etc/nginx/conf.d/default.conf
-
-RUN apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests -y \
-        openssh-client \
-        git \
-        ca-certificates \
-    && apt-get purge -y --auto-remove \
-    && rm -rf /etc/apt/sources.list.d/temp.list
 
 WORKDIR /app
 EXPOSE "80"
