@@ -1,16 +1,18 @@
 FROM hiqdev/php:7.4-fpm
 
 # Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/buster/Dockerfile
+FROM debian:buster-slim
+
 LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
 
-ENV NGINX_VERSION   1.17.9
-ENV NJS_VERSION     0.3.9
+ENV NGINX_VERSION   1.20.0
+ENV NJS_VERSION     0.5.3
 ENV PKG_RELEASE     1~buster
 
 RUN set -x \
 # create nginx user/group first, to be consistent throughout docker variants
-    && addgroup --system --gid 105 nginx \
-    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 102 nginx \
+    && addgroup --system --gid 101 nginx \
+    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 101 nginx \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 ca-certificates \
     && \
@@ -33,18 +35,18 @@ RUN set -x \
         nginx-module-xslt=${NGINX_VERSION}-${PKG_RELEASE} \
         nginx-module-geoip=${NGINX_VERSION}-${PKG_RELEASE} \
         nginx-module-image-filter=${NGINX_VERSION}-${PKG_RELEASE} \
-        nginx-module-njs=${NGINX_VERSION}.${NJS_VERSION}-${PKG_RELEASE} \
+        nginx-module-njs=${NGINX_VERSION}+${NJS_VERSION}-${PKG_RELEASE} \
     " \
     && case "$dpkgArch" in \
-        amd64|i386) \
+        amd64|i386|arm64) \
 # arches officialy built by upstream
-            echo "deb https://nginx.org/packages/mainline/debian/ buster nginx" >> /etc/apt/sources.list.d/nginx.list \
+            echo "deb https://nginx.org/packages/debian/ buster nginx" >> /etc/apt/sources.list.d/nginx.list \
             && apt-get update \
             ;; \
         *) \
 # we're on an architecture upstream doesn't officially build for
 # let's build binaries from the published source packages
-            echo "deb-src https://nginx.org/packages/mainline/debian/ buster nginx" >> /etc/apt/sources.list.d/nginx.list \
+            echo "deb-src https://nginx.org/packages/debian/ buster nginx" >> /etc/apt/sources.list.d/nginx.list \
             \
 # new directory for storing sources and .deb files
             && tempDir="$(mktemp -d)" \
@@ -85,13 +87,17 @@ RUN set -x \
     && apt-get install --no-install-recommends --no-install-suggests -y \
                         $nginxPackages \
                         gettext-base \
-    && apt-get remove --purge --auto-remove -y ca-certificates && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nginx.list \
+                        curl \
+    && apt-get remove --purge --auto-remove -y && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nginx.list \
     \
 # if we have leftovers from building, let's purge them (including extra, unnecessary build deps)
     && if [ -n "$tempDir" ]; then \
         apt-get purge -y --auto-remove \
         && rm -rf "$tempDir" /etc/apt/sources.list.d/temp.list; \
-    fi
+    fi \
+# forward request and error logs to docker log collector
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
