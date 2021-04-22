@@ -1,18 +1,14 @@
 FROM hiqdev/php:7.4-fpm
 
 # Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/buster/Dockerfile
-FROM debian:buster-slim
-
-LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
-
 ENV NGINX_VERSION   1.20.0
 ENV NJS_VERSION     0.5.3
 ENV PKG_RELEASE     1~buster
 
 RUN set -x \
 # create nginx user/group first, to be consistent throughout docker variants
-    && addgroup --system --gid 101 nginx \
-    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 101 nginx \
+    && addgroup --system --gid 105 nginx \
+    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 105 nginx \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 ca-certificates \
     && \
