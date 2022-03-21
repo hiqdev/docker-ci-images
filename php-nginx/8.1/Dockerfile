@@ -1,4 +1,4 @@
-FROM hiqdev/php:8.0-fpm-alpine
+FROM hiqdev/php:8.1-fpm-alpine
 
 ENV NGINX_VERSION 1.20.2
 ENV NJS_VERSION   0.7.0
