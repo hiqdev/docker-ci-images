@@ -1,13 +1,10 @@
 FROM hiqdev/php:8.1-fpm-alpine
 
-ENV NGINX_VERSION 1.20.2
-ENV NJS_VERSION   0.7.0
+ENV NGINX_VERSION 1.23.3
+ENV NJS_VERSION   0.7.10
 ENV PKG_RELEASE   1
 
 RUN set -x \
-# create nginx user/group first, to be consistent throughout docker variants
-    && addgroup -g 104 -S nginx \
-    && adduser -S -D -H -u 104 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx \
     && apkArch="$(cat /etc/apk/arch)" \
     && nginxPackages=" \
         nginx=${NGINX_VERSION}-r${PKG_RELEASE} \
@@ -23,16 +20,16 @@ RUN set -x \
         x86_64|aarch64) \
 # arches officially built by upstream
             set -x \
-            && KEY_SHA512="e7fa8303923d9b95db37a77ad46c68fd4755ff935d0a534d26eba83de193c76166c68bfe7f65471bf8881004ef4aa6df3e34689c305662750c0172fca5d8552a *stdin" \
+            && KEY_SHA512="e09fa32f0a0eab2b879ccbbc4d0e4fb9751486eedda75e35fac65802cc9faa266425edf83e261137a2f4d16281ce2c1a5f4502930fe75154723da014214f0655" \
             && wget -O /tmp/nginx_signing.rsa.pub https://nginx.org/keys/nginx_signing.rsa.pub \
-            && if [ "$(openssl rsa -pubin -in /tmp/nginx_signing.rsa.pub -text -noout | openssl sha512 -r)" = "$KEY_SHA512" ]; then \
+            && if echo "$KEY_SHA512 */tmp/nginx_signing.rsa.pub" | sha512sum -c -; then \
                 echo "key verification succeeded!"; \
                 mv /tmp/nginx_signing.rsa.pub /etc/apk/keys/; \
             else \
                 echo "key verification failed!"; \
                 exit 1; \
             fi \
-            && apk add -X "https://nginx.org/packages/alpine/v$(egrep -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" --no-cache $nginxPackages \
+            && apk add -X "https://nginx.org/packages/mainline/alpine/v$(egrep -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" --no-cache $nginxPackages \
             ;; \
         *) \
 # we're on an architecture upstream doesn't officially build for
@@ -45,13 +42,12 @@ RUN set -x \
                 libc-dev \
                 make \
                 openssl-dev \
-                pcre-dev \
+                pcre2-dev \
                 zlib-dev \
                 linux-headers \
                 libxslt-dev \
                 gd-dev \
                 geoip-dev \
-                perl-dev \
                 libedit-dev \
                 bash \
                 alpine-sdk \
@@ -60,7 +56,7 @@ RUN set -x \
                 export HOME=${tempDir} \
                 && cd ${tempDir} \
                 && curl -f -O https://hg.nginx.org/pkg-oss/archive/${NGINX_VERSION}-${PKG_RELEASE}.tar.gz \
-                && PKGOSSCHECKSUM=\"af6e7eb25594dffe2903358f7a2c5c956f5b67b8df3f4e8237c30b63e50ce28e6eada3ed453687409beef8f3afa8f551cb20df2f06bd5e235eb66df212ece2ed *${NGINX_VERSION}-${PKG_RELEASE}.tar.gz\" \
+                && PKGOSSCHECKSUM=\"52a80f6c3b3914462f8a0b2fbadea950bcd79c1bd528386aff4c28d5a80c6920d783575a061a47b60fea800eef66bf5a0178a137ea51c37277fe9c2779715990 *${NGINX_VERSION}-${PKG_RELEASE}.tar.gz\" \
                 && if [ \"\$(openssl sha512 -r ${NGINX_VERSION}-${PKG_RELEASE}.tar.gz)\" = \"\$PKGOSSCHECKSUM\" ]; then \
                     echo \"pkg-oss tarball checksum verification succeeded!\"; \
                 else \
@@ -70,7 +66,7 @@ RUN set -x \
                 && tar xzvf ${NGINX_VERSION}-${PKG_RELEASE}.tar.gz \
                 && cd pkg-oss-${NGINX_VERSION}-${PKG_RELEASE} \
                 && cd alpine \
-                && make all \
+                && make module-geoip module-image-filter module-njs module-xslt \
                 && apk index -o ${tempDir}/packages/alpine/${apkArch}/APKINDEX.tar.gz ${tempDir}/packages/alpine/${apkArch}/*.apk \
                 && abuild-sign -k ${tempDir}/.abuild/abuild-key.rsa ${tempDir}/packages/alpine/${apkArch}/APKINDEX.tar.gz \
                 " \
@@ -85,31 +81,8 @@ RUN set -x \
     && if [ -n "$tempDir" ]; then rm -rf "$tempDir"; fi \
     && if [ -n "/etc/apk/keys/abuild-key.rsa.pub" ]; then rm -f /etc/apk/keys/abuild-key.rsa.pub; fi \
     && if [ -n "/etc/apk/keys/nginx_signing.rsa.pub" ]; then rm -f /etc/apk/keys/nginx_signing.rsa.pub; fi \
-# Bring in gettext so we can get `envsubst`, then throw
-# the rest away. To do this, we need to install `gettext`
-# then move `envsubst` out of the way so `gettext` can
-# be deleted completely, then move `envsubst` back.
-    && apk add --no-cache --virtual .gettext gettext \
-    && mv /usr/bin/envsubst /tmp/ \
-    \
-    && runDeps="$( \
-        scanelf --needed --nobanner /tmp/envsubst \
-            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-            | sort -u \
-            | xargs -r apk info --installed \
-            | sort -u \
-    )" \
-    && apk add --no-cache $runDeps \
-    && apk del .gettext \
-    && mv /tmp/envsubst /usr/local/bin/ \
-# Bring in tzdata so users could set the timezones through the environment
-# variables
-    && apk add --no-cache tzdata \
 # Bring in curl and ca-certificates to make registering on DNS SD easier
-    && apk add --no-cache curl ca-certificates libzip \
-# forward request and error logs to docker log collector
-    && ln -sf /dev/stdout /var/log/nginx/access.log \
-    && ln -sf /dev/stderr /var/log/nginx/error.log
+    && apk add --no-cache curl ca-certificates
 
 RUN rm /etc/nginx/conf.d/default.conf
 
