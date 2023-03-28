@@ -2,7 +2,8 @@ name: Build
 
 env:
   PERIODIC_UPDATES_MIN_VERSION: 8.2
-  IMAGE_NAME: hiqdev/docker-ci-images/php-nginx
+  REGISTRY: registry.hiqdev.com
+  IMAGE_NAME: registry.hiqdev.com/hiqdev/docker-ci-images/php-nginx
 
 
 on:
@@ -52,8 +53,9 @@ jobs:
         name: Login to Docker registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_HIQDEV_USERNAME }}
+          password: ${{ secrets.REGISTRY_HIQDEV_TOKEN }}
       -
         name: Build and push
         uses: docker/build-push-action@v4
