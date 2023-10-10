@@ -2,6 +2,10 @@
 
 set -e
 
+if [ "$BEFORE_ENTRYPOINT" != "" ]; then
+    $BEFORE_ENTRYPOINT
+fi
+
 # first arg is `sh` or `bash`
 if [ "$1" = 'sh' ] || [ "$1" = 'bash' ]; then
     # GitLab Says:
@@ -12,8 +16,4 @@ if [ "$1" = 'sh' ] || [ "$1" = 'bash' ]; then
 else
     nginx
     /usr/local/bin/hiqdev-docker-entrypoint php-fpm "$@"
-fi
-
-if [ "$AFTER_ENTRYPOINT" != "" ]; then
-    $AFTER_ENTRYPOINT
 fi
