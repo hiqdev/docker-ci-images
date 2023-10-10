@@ -12,6 +12,8 @@ if [ "$1" = 'sh' ] || [ "$1" = 'bash' ]; then
 else
     nginx
     /usr/local/bin/hiqdev-docker-entrypoint php-fpm "$@"
-    echo 111111111111111111111
 fi
 
+if [ "$AFTER_ENTRYPOINT" != "" ]; then
+    $AFTER_ENTRYPOINT
+fi
