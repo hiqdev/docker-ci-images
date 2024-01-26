@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+if [ "$BEFORE_ENTRYPOINT" != "" ]; then
+    $BEFORE_ENTRYPOINT
+fi
+
+# first arg is `sh` or `bash`
+if [ "$1" = 'sh' ] || [ "$1" = 'bash' ]; then
+    # GitLab Says:
+    # To ensure a job can run, its Docker image must:
+    #  - Provide sh or bash
+    #  - Define an ENTRYPOINT that starts a shell when passed sh/bash as argument
+    exec "$@"
+else
+    nginx
+    /usr/local/bin/hiqdev-docker-entrypoint php-fpm "$@"
+fi
