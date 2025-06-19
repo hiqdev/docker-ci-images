@@ -4,6 +4,7 @@ EVENT_NAME=$1
 CHANGED_DIRS=$2
 PERIODIC_UPDATES_MIN_VERSION=$3
 
+# Handle PHP images
 cd php-nginx || exit
 VERSIONS=$(ls -d */ | cut -f1 -d'/')
 
@@ -19,11 +20,17 @@ for VERSION in $VERSIONS; do
     fi
 
     jq --null-input \
-      --arg php "$VERSION" \
-      '{"php": $php}'
-done | jq -cs '
-		{
-			"fail-fast": false,
-			matrix: { include: . },
-		}
-'
+      --arg type "php-nginx" \
+      --arg version "$VERSION" \
+      '{"type": $type, "version": $version}'
+done
+
+cd ..
+
+# Handle Playwright image
+if [[ "$CHANGED_DIRS" == *"playwright/"* || "$EVENT_NAME" == "schedule" ]]; then
+    jq --null-input \
+      --arg type "playwright" \
+      --arg version "latest" \
+      '{"type": $type, "version": $version}'
+fi
