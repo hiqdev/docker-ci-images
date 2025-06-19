@@ -14,14 +14,17 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install only necessary npm packages
-COPY package.json package-lock.json* ./
-RUN npm ci
+# === BAKE BROWSERS INTO IMAGE ===
+# 1. change browser cache directory from ~/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Install Playwright with browser dependencies
-RUN npx playwright install --with-deps
+# 2. Bake in browsers & deps.
+#    Browsers will be downloaded in `/ms-playwright`.
+#    Note: make sure to set 777 to the registry so that any user can access
+#    registry.
+RUN mkdir /ms-playwright && \
+    chmod -R 777 /ms-playwright
 
-# Set working directory and entry point
-WORKDIR /app
-
-CMD ["npx", "playwright", "--version"]
+# Install Playwright and its browsers
+RUN npx playwright install --with-deps && \
+    rm -rf /var/lib/apt/lists/* \
