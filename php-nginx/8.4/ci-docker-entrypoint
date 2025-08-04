@@ -3,7 +3,7 @@
 set -e
 
 if [ "$BEFORE_ENTRYPOINT" != "" ]; then
-    $BEFORE_ENTRYPOINT
+    bash -c "$BEFORE_ENTRYPOINT"
 fi
 
 # first arg is `sh` or `bash`
