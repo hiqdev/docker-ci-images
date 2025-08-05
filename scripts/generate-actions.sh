@@ -3,6 +3,7 @@
 EVENT_NAME=$1
 CHANGED_DIRS=$2
 PERIODIC_UPDATES_MIN_VERSION=$3
+BUILD_MIN_VERSION=$4
 
 # Build JSON array
 items=()
@@ -14,6 +15,11 @@ VERSIONS=$(ls -d */ | cut -f1 -d'/')
 for VERSION in $VERSIONS; do
     # Do not include versions that are not supported by periodic updates
     if [[ $EVENT_NAME == 'schedule' ]] && [[ $VERSION < $PERIODIC_UPDATES_MIN_VERSION ]]; then
+        continue
+    fi
+
+    # Do not include legacy versions
+    if [[ $VERSION < $BUILD_MIN_VERSION ]]; then
         continue
     fi
 
