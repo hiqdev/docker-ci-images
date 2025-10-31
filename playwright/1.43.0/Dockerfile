@@ -30,4 +30,4 @@ RUN npm install -g playwright@1.43.0 && \
 WORKDIR /app
 
 # Verify installation
-RUN playwright --version
+RUN playwright --version && ls -l /ms-playwright
