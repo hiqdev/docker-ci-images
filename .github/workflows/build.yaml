@@ -68,7 +68,7 @@ jobs:
         run: |
           if [ "${{ matrix.type }}" = "php-nginx" ]; then
             echo "tag=${{ env.PHP_IMAGE_NAME }}:${{ matrix.version }}" >> $GITHUB_OUTPUT
-          else
+          elif [ "${{ matrix.type }}" = "playwright" ]; then
             echo "tag=${{ env.PLAYWRIGHT_IMAGE_NAME }}:${{ matrix.version }}" >> $GITHUB_OUTPUT
           fi
 
