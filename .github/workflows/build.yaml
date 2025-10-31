@@ -32,9 +32,8 @@ jobs:
         with:
           list-files: json
           filters: |
-            php-nginx:
+            version:
               - 'php-nginx/**'
-            playwright:
               - 'playwright/**'
       -
         id: generate-jobs
