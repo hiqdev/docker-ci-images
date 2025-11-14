@@ -21,7 +21,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # 2. Create directory and make it world-accessible
 RUN mkdir -p /ms-playwright && chmod -R 777 /ms-playwright
 
-# Install Playwright 1.43.0 and its browsers
+# Install Playwright 1.56.1 and its browsers
 RUN npm install -g playwright@1.56.1 && \
     npx playwright install --with-deps && \
     rm -rf /var/lib/apt/lists/*
