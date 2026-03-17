@@ -23,7 +23,7 @@ RUN mkdir -p /ms-playwright && chmod -R 777 /ms-playwright
 
 # Install Playwright 1.43.0 and its browsers
 RUN npm install -g playwright@1.43.0 && \
-    npx playwright install --with-deps && \
+    playwright install chromium --with-deps && \
     rm -rf /var/lib/apt/lists/*
 
 # Set default working directory
