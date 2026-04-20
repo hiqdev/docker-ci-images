@@ -1,4 +1,4 @@
-FROM hiqdev/php:8.4-fpm-alpine
+FROM hiqdev/php:8.5-fpm-alpine
 
 # Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/alpine-slim/Dockerfile
 ENV NGINX_VERSION  1.29.8
