@@ -101,6 +101,7 @@ RUN set -x \
     && apk add --no-cache curl ca-certificates
 
 RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 WORKDIR /app
 EXPOSE "80"
