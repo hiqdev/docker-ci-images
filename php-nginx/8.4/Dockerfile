@@ -1,7 +1,7 @@
 FROM hiqdev/php:8.4-fpm-alpine
 
 # Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/alpine-slim/Dockerfile
-ENV NGINX_VERSION  1.29.0
+ENV NGINX_VERSION  1.29.8
 ENV PKG_RELEASE    1
 ENV DYNPKG_RELEASE 1
 
@@ -26,7 +26,16 @@ RUN set -x \
                 echo "key verification failed!"; \
                 exit 1; \
             fi \
-            && apk add -X "https://nginx.org/packages/mainline/alpine/v$(egrep -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" --no-cache $nginxPackages \
+# we need to make sure nginx.org packages are pulled in, which isnt guaranteed
+# as Alpine repos might have the same version in the repos.
+# query nginx.org binaries for the dependencies
+            && DEPS=$(apk query --summarize depends --recursive --no-cache \
+                       --repository "@nginxorg https://nginx.org/packages/mainline/alpine/v$(egrep -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" \
+                       ${nginxPackages/=/@nginxorg=}) \
+# install those dependencies from Alpine repos
+            && apk add --no-cache $DEPS \
+# limit apk to nginx.org repos only to install the requested packages
+            && apk add --repositories-file /dev/null -X "https://nginx.org/packages/mainline/alpine/v$(egrep -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" --no-cache $nginxPackages \
             ;; \
         *) \
 # we're on an architecture upstream doesn't officially build for
@@ -50,7 +59,7 @@ RUN set -x \
                 export HOME=${tempDir} \
                 && cd ${tempDir} \
                 && curl -f -L -O https://github.com/nginx/pkg-oss/archive/${NGINX_VERSION}-${PKG_RELEASE}.tar.gz \
-                && PKGOSSCHECKSUM=\"400593da45fc0195a01138c0c23a06059da1c6a2e26959f2c4c95fbaf63436ff211665ef01392d2b775a0133d5b57680dabe51b840a55f82e89621e84cf651d1 *${NGINX_VERSION}-${PKG_RELEASE}.tar.gz\" \
+                && PKGOSSCHECKSUM=\"7074c3ba1ece708140afd0220b16df77651fbb56cc012e901bc1c4a80531872b7a58ad97a28357646575ce625e94a0540796c045f95d33e40e6d3874ce7b3d79 *${NGINX_VERSION}-${PKG_RELEASE}.tar.gz\" \
                 && if [ \"\$(openssl sha512 -r ${NGINX_VERSION}-${PKG_RELEASE}.tar.gz)\" = \"\$PKGOSSCHECKSUM\" ]; then \
                     echo \"pkg-oss tarball checksum verification succeeded!\"; \
                 else \
@@ -66,7 +75,13 @@ RUN set -x \
                 " \
             && cp ${tempDir}/.abuild/abuild-key.rsa.pub /etc/apk/keys/ \
             && apk del --no-network .build-deps \
-            && apk add -X ${tempDir}/packages/alpine/ --no-cache $nginxPackages \
+# same as in the "arches officially built by upstream" block, we want to make
+# sure the packages we've just built will get installed
+            && DEPS=$(apk query --summarize depends --recursive --no-cache \
+                       --repository "@nginxorg ${tempDir}/packages/alpine/" \
+                       ${nginxPackages/=/@nginxorg=}) \
+            && apk add --no-cache $DEPS \
+            && apk add --repositories-file /dev/null -X ${tempDir}/packages/alpine/ --no-cache $nginxPackages \
             ;; \
     esac \
 # remove checksum deps
@@ -85,8 +100,8 @@ RUN set -x \
 # Bring in curl and ca-certificates to make registering on DNS SD easier
     && apk add --no-cache curl ca-certificates
 
-
 RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 WORKDIR /app
 EXPOSE "80"

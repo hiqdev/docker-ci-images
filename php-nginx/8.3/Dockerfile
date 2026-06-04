@@ -1,7 +1,7 @@
 FROM hiqdev/php:8.3-fpm-alpine
 
 # Grabbed from https://github.com/nginxinc/docker-nginx/blob/master/mainline/alpine-slim/Dockerfile
-ENV NGINX_VERSION  1.29.0
+ENV NGINX_VERSION  1.29.8
 ENV PKG_RELEASE    1
 ENV DYNPKG_RELEASE 1
 
@@ -88,6 +88,7 @@ RUN set -x \
     && apk add --no-cache curl ca-certificates
 
 RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 WORKDIR /app
 EXPOSE "80"
