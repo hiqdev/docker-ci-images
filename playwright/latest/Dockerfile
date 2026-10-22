@@ -1,4 +1,4 @@
-FROM node:18-bullseye
+FROM node:24-bullseye
 
 # Tells apt and dpkg to skip interactive prompts.
 ENV DEBIAN_FRONTEND=noninteractive
