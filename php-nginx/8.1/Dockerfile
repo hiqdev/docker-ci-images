@@ -6,6 +6,7 @@ ENV NGINX_SHA256=2565b5c837050e958f70fb0f73c48e2bca4542ad349fd356f46fb0c72610bc6
 RUN set -x \
     && addgroup -S nginx \
     && adduser -S -D -H -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx \
+    && addgroup nginx www-data \
     && apk add --no-cache --virtual .nginx-build-deps \
         gcc \
         libc-dev \
@@ -14,6 +15,7 @@ RUN set -x \
         pcre2-dev \
         zlib-dev \
         linux-headers \
+        pax-utils \
     && curl -fsSL -o /tmp/nginx.tar.gz "https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" \
     && echo "${NGINX_SHA256}  /tmp/nginx.tar.gz" | sha256sum -c - \
     && tar -xzf /tmp/nginx.tar.gz -C /tmp \
@@ -37,11 +39,28 @@ RUN set -x \
         --with-compat \
         --with-file-aio \
         --with-threads \
-        --with-http_ssl_module \
-        --with-http_v2_module \
-        --with-http_realip_module \
+        --with-http_addition_module \
+        --with-http_auth_request_module \
+        --with-http_dav_module \
+        --with-http_flv_module \
+        --with-http_gunzip_module \
         --with-http_gzip_static_module \
+        --with-http_mp4_module \
+        --with-http_random_index_module \
+        --with-http_realip_module \
+        --with-http_secure_link_module \
+        --with-http_slice_module \
+        --with-http_ssl_module \
         --with-http_stub_status_module \
+        --with-http_sub_module \
+        --with-http_v2_module \
+        --with-http_v3_module \
+        --with-mail \
+        --with-mail_ssl_module \
+        --with-stream \
+        --with-stream_realip_module \
+        --with-stream_ssl_module \
+        --with-stream_ssl_preread_module \
     && make -j"$(nproc)" \
     && make install \
     && cd / \
@@ -54,6 +73,7 @@ RUN set -x \
             | xargs -r apk info --installed \
             | sort -u \
     )" \
+    && [ -n "$runDeps" ] \
     && apk add --no-cache --virtual .nginx-run-deps $runDeps \
     && apk del .nginx-build-deps \
     && apk add --no-cache \
@@ -61,6 +81,7 @@ RUN set -x \
         tzdata \
         curl \
         ca-certificates \
+    && ln -s /usr/bin/envsubst /usr/local/bin/envsubst \
 # forward request and error logs to docker log collector
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
